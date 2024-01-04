@@ -1,0 +1,276 @@
+{% extends 'base/main.html' %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<style>
+    /* Add this style block for improved styling */
+    .task-wrapper {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #fff;
+        border-radius: 5px;
+        position: relative;
+        /* Ensure the relative position for absolute child elements */
+    }
+
+    .task-controls {
+        display: inline-block;
+        margin-left: 8px;
+    }
+
+    .colon-icon {
+        cursor: pointer;
+        font-size: 20px;
+    }
+
+    .task-menu {
+        position: absolute;
+        top: 0;
+        /* Adjusted to be at the top of the task wrapper */
+        right: 0;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: none;
+        min-width: 120px;
+        z-index: 1;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 8px 0;
+    }
+
+    .task-menu a {
+        display: block;
+        padding: 8px 16px;
+        text-decoration: none;
+        color: #333;
+        transition: background-color 0.3s ease;
+        font-size: 14px;
+        /* Adjusted font size */
+    }
+
+    .task-menu a:hover {
+        background-color: #f2f2f2;
+    }
+
+    .task-menu .delete-link {
+        color: #e53935;
+        /* Adjusted color for the delete link */
+        font-size: 14px;
+        /* Adjusted font size for delete link */
+    }
+
+    #all-tasks-link.all-tasks-active {
+        font-weight: bold;
+        color: #cf4949
+    }
+    #export-data {
+        font-weight: bold;
+        color: #cf4949
+    }
+
+    .task-wrapper {
+        display: flex;
+        align-items: baseline;
+        /* Align items at the baseline */
+        padding: 10px;
+    }
+
+    .task-title {
+        flex: 1;
+        /* Allow it to grow to take remaining space */
+        min-width: 150px;
+        /* Set a minimum width for the task title */
+    }
+
+    .task-details {
+        flex: 1;
+        /* Allow it to grow to take remaining space */
+    }
+
+    .task-details ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .task-details li {
+        margin-bottom: 5px;
+    }
+</style>
+
+<div class="header-bar">
+    <div>
+        <h1>Hello {{ request.user|title }}</h1>
+        <h3 style="margin: 0">You have <i>{{ count }}</i> incomplete task{{ count|pluralize:"s" }}</h3>
+    </div>
+
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'logout' %}">Logout</a>
+    {% else %}
+    <a href="{% url 'login' %}">Login</a>
+    {% endif %}
+
+</div>
+
+<div id="search-add-wrapper">
+    <form method="GET" style="display: flex;">
+        <input type='text' name='search-area' placeholder="Search your task" value="{{ search_input }}">
+        <input class="button" type="submit" value='Search'>
+    </form>
+    <a id="all-tasks-link" href="{% url 'tasks' %}">All Tasks</a>
+    {% if tasks|length > 0 %}
+    <div>
+        <a id="export-data" href="{% url 'export_data' %}" class="btn btn-primary">Export Data</a>
+    </div>
+    <a id="add-link" href="{% url 'task-create' %}">&#x2b;</a>
+    {% endif %}
+    
+</div>
+
+<!-- Hidden form. Form submits new item positions -->
+<form style="display: none;" id="reorderForm" method="post" action="{% url 'task-reorder' %}">
+    {% csrf_token %}
+    <input type="hidden" id="positionInput" name="position">
+</form>
+
+<div id="tasklist" class="task-items-wrapper">
+    {% for task in tasks %}
+    <div class="task-wrapper" data-category="{{ task.category }}" data-priority="{{ task.priority }}">
+        <div class="task-title">
+            {% if task.complete %}
+            <div class="task-complete-icon"></div>
+            <i><s><a href="{% url 'task-update' task.id %}">{{ task }}</a></s></i>
+            {% else %}
+            <div class="task-incomplete-icon"></div>
+            <a href="{% url 'task-update' task.id %}">{{ task }}</a>
+            {% endif %}
+        </div>
+        <div class="task-details">
+            <p>Due Date: {{ task.due_date }}</p>
+            <p>Priority: {{ task.priority }}</p>
+        </div>
+        <div class="task-menu" style="display: none;">
+            <a href="{% url 'task-update' task.id %}">Edit</a>
+            <a href="{% url 'task-delete' task.id %}" class="delete-link">Delete</a>
+        </div>
+        <div class="task-controls">
+            <span class="colon-icon">&#8286;</span>
+        </div>
+    </div>
+    {% endfor %}
+
+
+    {% if tasks|length == 0 %}
+    <div style="text-align: center; padding-bottom: 10px; line-height: 1em;">
+        <h3>No new tasks are created.</h3>
+        <h3>Create a <a style="text-decoration: none; color: #e53935;" href="{% url 'task-create' %}">New task</a>!</h3>
+    </div>
+    {% endif %}
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const taskWrappers = document.querySelectorAll('.task-wrapper');
+
+        taskWrappers.forEach(wrapper => {
+            const taskControls = wrapper.querySelector('.task-controls');
+            const taskMenu = wrapper.querySelector('.task-menu');
+
+            taskControls.addEventListener('click', function (event) {
+                event.stopPropagation();
+                taskMenu.style.display = taskMenu.style.display === 'none' ? 'block' : 'none';
+            });
+
+            taskMenu.addEventListener('click', function (event) {
+                event.stopPropagation();
+            });
+        });
+
+        document.getElementById("sort-by-button").addEventListener("click", function () {
+            document.getElementById("sort-by-modal").style.display = "block";
+        });
+
+        document.getElementById("sort-by-category").addEventListener("change", function () {
+            updateTaskDisplay();
+        });
+
+        document.getElementById("sort-by-priority").addEventListener("change", function () {
+            updateTaskDisplay();
+        });
+
+        document.getElementById("sort-by-apply-button").addEventListener("click", function () {
+            updateTaskDisplay();
+            document.getElementById("sort-by-modal").style.display = "none";
+        });
+
+        // Function to update task display based on sorting criteria
+        function updateTaskDisplay() {
+            var selectedCategory = document.querySelector("input[name='category']:checked");
+            var selectedPriority = document.querySelector("input[name='priority']:checked");
+
+            console.log("Selected Category:", selectedCategory ? selectedCategory.value : "All");
+            console.log("Selected Priority:", selectedPriority ? selectedPriority.value : "All");
+
+            var tasks = document.querySelectorAll(".task-wrapper");
+
+            tasks.forEach(function (task) {
+                var category = task.getAttribute("data-category");
+                var priority = task.getAttribute("data-priority");
+
+                var categoryMatch = !selectedCategory || category === selectedCategory.value;
+                var priorityMatch = !selectedPriority || priority === selectedPriority.value;
+
+                console.log("Task:", category, priority);
+                console.log("Match:", categoryMatch, priorityMatch);
+
+                if (categoryMatch && priorityMatch) {
+                    task.style.display = "flex";
+                } else {
+                    task.style.display = "none";
+                }
+            });
+        }
+
+        // Add event listener for "All Tasks" link
+        document.getElementById("all-tasks-link").addEventListener("click", function () {
+            var tasks = document.querySelectorAll(".task-wrapper");
+            tasks.forEach(function (task) {
+                task.style.display = "flex";
+            });
+            var otherLinks = document.querySelectorAll(".task-filter-link");
+            otherLinks.forEach(function (link) {
+                link.classList.remove("all-tasks-active");
+            });
+
+            // Add the "all-tasks-active" class to the "All Tasks" link
+            this.classList.add("all-tasks-active");
+        });
+
+        var taskList = document.getElementById("tasklist");
+        var reorderForm = document.getElementById("reorderForm");
+        var positionInput = document.getElementById("positionInput");
+
+        let sortable = Sortable.create(taskList, {
+            handle: '.handle',
+            ghostClass: 'dropArea',
+            chosenClass: 'selectedTask',
+        });
+
+        // Function to handle reordering and form submission
+        function reordering() {
+            const rows = document.getElementsByClassName("task-wrapper");
+            let pos = [];
+            for (let row of rows) {
+                pos.push(row.dataset.position);
+            }
+            console.log(pos.join(","))
+            positionInput.value = pos.join(',');
+            reorderForm.submit();
+        }
+
+        document.ondrop = reordering;
+    });
+</script>
+
+
+
+{% endblock content %}

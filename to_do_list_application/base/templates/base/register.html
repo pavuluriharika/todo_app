@@ -1,0 +1,81 @@
+{% extends 'base/main.html' %}
+{% block content %}
+
+<div class="header-bar">
+    <h1>Register</h1>
+</div>
+
+<div class="card-body">
+    <form method="POST" id="registration-form">
+        {% csrf_token %}
+        
+        <div>
+            <label>{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div class="error">{{ form.username.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div>
+            <label>{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div class="error">{{ form.password1.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label>{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div class="error">{{ form.password2.errors }}</div>
+            {% endif %}
+        </div>
+
+        <input style="margin-top:10px;" class="button" type="submit" value="Register">
+    </form>
+
+    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+</div>
+
+<script>
+    document.getElementById("registration-form").addEventListener("submit", function (event) {
+        var username = document.getElementById("id_username").value;
+        var password1 = document.getElementById("id_password1").value;
+        var password2 = document.getElementById("id_password2").value;
+
+        // Validate username
+        if (!/^[a-zA-Z0-9@/./+/-/_]{1,150}$/.test(username)) {
+            document.getElementById("username-error").innerHTML = "Invalid username. Please use only letters, digits, and @/./+/-/_ characters.";
+            event.preventDefault();
+        } else {
+            document.getElementById("username-error").innerHTML = "";
+        }
+
+        // Validate password
+        if (password1.length < 8) {
+            document.getElementById("password1-error").innerHTML = "Password should be at least 8 characters long.";
+            event.preventDefault();
+        } else {
+            document.getElementById("password1-error").innerHTML = "";
+        }
+
+        if (password1 === username) {
+            document.getElementById("password1-error").innerHTML = "Password should not be too similar to your username.";
+            event.preventDefault();
+        } else {
+            document.getElementById("password1-error").innerHTML = "";
+        }
+
+        // Validate password confirmation
+        if (password1 !== password2) {
+            document.getElementById("password2-error").innerHTML = "Password confirmation doesn't match the password.";
+            event.preventDefault();
+        } else {
+            document.getElementById("password2-error").innerHTML = "";
+        }
+    });
+</script>
+
+{% endblock content %}

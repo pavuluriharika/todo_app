@@ -1,0 +1,77 @@
+{% extends 'base/main.html' %}
+{% block content %}
+<style>
+    body {
+        background-color: #FAFAFA;
+        font-family: 'Nunito', sans-serif;
+        padding-top: 50px;
+    }
+
+    .card-body {
+        max-width: 400px;
+        margin: auto;
+        background-color: #fff;
+        -webkit-box-shadow: 2px 2px 13px -4px rgba(0, 0, 0, 0.21);
+        box-shadow: 2px 2px 13px -4px rgba(0, 0, 0, 0.21);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 50px;
+    }
+
+    p {
+        color: #4b5156;
+        margin-bottom: 20px;
+    }
+
+    b {
+        font-weight: bold;
+    }
+
+    .button {
+        border: 1px solid #757575;
+        background-color: #EB796F;
+        color: #FFF;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+
+    .button:hover {
+        background-color: #CF5F59;
+    }
+
+    .btn-secondary {
+        background-color: #eee;
+        color: #333;
+        border: 1px solid #333;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-secondary:hover {
+        background-color: #ddd;
+    }
+</style>
+
+<div class="header-bar">
+    <a href="{% url 'tasks' %}">&#8592; Go Back</a>
+</div>
+
+<div class="card-body">
+    <form method="POST">
+        {% csrf_token %}
+        <p>Are your sure you want to delete this task? <b>"{{task}}"</b> </p>
+        <input class="button" type="submit" value="Delete" />
+        <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+    </form>
+</div>
+
+
+
+{% endblock content %}
