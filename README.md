@@ -12,7 +12,7 @@ This Django application is a simple to-do list manager that allows users to crea
 - Django 4.1.7
 ## Setup
 Clone the repository:
-git clone https://github.com/Hanyaa-Technologies/Todo_App.git
+git clone https://github.com/pavuluriharika/todo_app.git
 ## Install dependencies:
 pip install -r requirements.txt
 ## Run the development server:
